@@ -81,6 +81,16 @@ def test_respects_claude_config_dir(tmp_path: Path) -> None:
     assert not (home / ".claude").exists()
 
 
+def test_english_version(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    home.mkdir()
+    assert _run(home, "--lang", "en", "--no-hook").returncode == 0
+    text = (home / ".claude" / "skills" / "aar" / "SKILL.md").read_text(encoding="utf-8")
+    assert "name: aar" in text
+    assert "## Step 1" in text
+    assert "method:" in (home / ".claude" / "aar-log.md").read_text(encoding="utf-8")
+
+
 def test_no_hook_leaves_settings_alone(tmp_path: Path) -> None:
     home = tmp_path / "home"
     home.mkdir()

@@ -24,6 +24,7 @@ skills/aar/SKILL.md                 сам скилл: восемь шагов �
 skills/aar/templates/aar-log.md     шаблон журнала разборов (один на все проекты)
 skills/aar/templates/checks-map.md  шаблон карты проверок проекта
 skills/aar/templates/run-ledger.md  шаблон ведомости одного разбора
+skills-en/aar/                      то же на английском (python install.py --lang en)
 hooks/aar_trigger_gate.py           хук Stop: не даёт Claude поправить себя без разбора
 install.py                          установка и удаление
 tests/                              тесты хука и установщика
@@ -49,6 +50,7 @@ python install.py
 ```bash
 python install.py --project /путь/к/проекту   # только в один проект, в его .claude/
 python install.py --no-hook                    # только скилл, без хука
+python install.py --lang en                    # английский текст скилла
 python install.py --uninstall                  # удалить (журнал остаётся)
 ```
 
@@ -110,8 +112,9 @@ Claude грепает его, чтобы увидеть повтор («это �
 
 ## Язык
 
-Текст скилла на русском. Claude отвечает на языке пользователя, хук ловит фразы на русском и
-английском.
+Скилл есть на русском (`skills/aar`, ставится по умолчанию) и на английском (`skills-en/aar`,
+ключ `--lang en`). Содержание одинаковое. На каком бы языке ни был текст скилла, Claude отвечает
+на языке пользователя. Хук ловит фразы на обоих языках.
 
 ## English
 
@@ -123,10 +126,11 @@ and memory notes. A shared journal (`~/.claude/aar-log.md`) lets it detect repea
 and a per-project checks map (`.claude/aar/checks-map.md`) shows which kinds of checks exist and
 what each one misses.
 
-Install: `python install.py` (all projects) or `python install.py --project <dir>`, then restart
-Claude Code. The optional Stop hook returns the turn once if Claude corrects its own earlier answer
-("I was wrong", "correction:") without running the review. The skill text is in Russian; Claude
-replies in the user's language.
+Install the English version: `python install.py --lang en` (all projects) or
+`python install.py --lang en --project <dir>`, then restart Claude Code. `--no-hook` skips the hook,
+`--uninstall` removes everything except the journal. If `CLAUDE_CONFIG_DIR` is set, the global
+install goes there. The Stop hook returns the turn once if Claude corrects its own earlier answer
+("I was wrong", "correction:") without running the review. Claude replies in the user's language.
 
 ## Лицензия
 

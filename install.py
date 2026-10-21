@@ -3,10 +3,11 @@
     python install.py                      # для всех проектов: ~/.claude или CLAUDE_CONFIG_DIR
     python install.py --project <папка>    # в один проект: <папка>/.claude
     python install.py --no-hook            # только скилл, без хука Stop
+    python install.py --lang en            # английский текст скилла (по умолчанию русский)
     python install.py --uninstall [--project <папка>]
 
 Что делает:
-  1. копирует skills/aar в <.claude>/skills/aar (прежняя версия - рядом, aar.bak-<время>);
+  1. копирует skills/aar (или skills-en/aar) в <.claude>/skills/aar (прежняя версия - рядом, aar.bak-<время>);
   2. копирует hooks/aar_trigger_gate.py в <.claude>/hooks/;
   3. добавляет хук в раздел Stop файла <.claude>/settings.json (прежний файл - settings.json.bak-aar);
   4. создаёт журнал aar-log.md в папке настроек Claude Code, если его нет. Журнал при удалении не трогается.
@@ -101,19 +102,20 @@ def unregister_hook(settings_path: Path) -> bool:
     return True
 
 
-def install(claude_dir: Path, home: Path, project: bool, with_hook: bool) -> None:
+def install(claude_dir: Path, home: Path, project: bool, with_hook: bool, lang: str = "ru") -> None:
+    skill_src = HERE / ("skills-en" if lang == "en" else "skills") / "aar"
     skill_dst = claude_dir / "skills" / "aar"
     if skill_dst.exists():
         backup = skill_dst.with_name("aar.bak-" + time.strftime("%Y%m%d-%H%M%S"))
         shutil.move(str(skill_dst), str(backup))
         print(f"прежний скилл сохранён: {backup}")
-    shutil.copytree(HERE / "skills" / "aar", skill_dst)
+    shutil.copytree(skill_src, skill_dst)
     print(f"скилл: {skill_dst}")
 
     journal = home / "aar-log.md"
     if not journal.exists():
         journal.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(HERE / "skills" / "aar" / "templates" / "aar-log.md", journal)
+        shutil.copy2(skill_src / "templates" / "aar-log.md", journal)
         print(f"журнал создан: {journal}")
     else:
         print(f"журнал уже есть: {journal}")
@@ -149,6 +151,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Установка скилла aar для Claude Code")
     parser.add_argument("--project", type=Path, help="папка проекта; без неё - для всех проектов (~/.claude или CLAUDE_CONFIG_DIR)")
     parser.add_argument("--no-hook", action="store_true", help="не ставить хук Stop")
+    parser.add_argument("--lang", choices=("ru", "en"), default="ru", help="язык текста скилла")
     parser.add_argument("--uninstall", action="store_true", help="удалить скилл и хук")
     args = parser.parse_args(argv)
 
@@ -163,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.uninstall:
         uninstall(claude_dir)
     else:
-        install(claude_dir, home, bool(args.project), not args.no_hook)
+        install(claude_dir, home, bool(args.project), not args.no_hook, args.lang)
         print("Готово. Перезапустите Claude Code, чтобы он увидел скилл и хук.")
     return 0
 
