@@ -99,6 +99,45 @@ def test_no_hook_leaves_settings_alone(tmp_path: Path) -> None:
     assert not (home / ".claude" / "settings.json").exists()
 
 
+def test_claude_md_rule_added_once_and_removed(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    claude = home / ".claude"
+    claude.mkdir(parents=True)
+    claude_md = claude / "CLAUDE.md"
+    claude_md.write_text("# Мои правила\n\nОтвечай коротко.\n", encoding="utf-8")
+
+    assert _run(home).returncode == 0
+    text = claude_md.read_text(encoding="utf-8")
+    assert text.startswith("# Мои правила\n\nОтвечай коротко.\n")
+    assert text.count("<!-- aar:start -->") == 1
+    assert "скилл `aar`" in text
+    assert (claude / "aar-log.md").as_posix() in text
+
+    assert _run(home).returncode == 0
+    assert claude_md.read_text(encoding="utf-8").count("<!-- aar:start -->") == 1
+
+    assert _run(home, "--uninstall").returncode == 0
+    assert claude_md.read_text(encoding="utf-8") == "# Мои правила\n\nОтвечай коротко.\n"
+
+
+def test_claude_md_rule_in_project_root_and_english(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    project = tmp_path / "proj"
+    home.mkdir()
+    project.mkdir()
+    assert _run(home, "--project", str(project), "--lang", "en").returncode == 0
+    text = (project / "CLAUDE.md").read_text(encoding="utf-8")
+    assert "run the `aar` skill" in text
+    assert not (home / ".claude" / "CLAUDE.md").exists()
+
+
+def test_no_claude_md_flag(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    home.mkdir()
+    assert _run(home, "--no-claude-md").returncode == 0
+    assert not (home / ".claude" / "CLAUDE.md").exists()
+
+
 def test_broken_settings_is_not_overwritten(tmp_path: Path) -> None:
     home = tmp_path / "home"
     (home / ".claude").mkdir(parents=True)

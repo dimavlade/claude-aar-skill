@@ -17,6 +17,36 @@ after-action review, разбора после действия.
 CI), и только если они невозможны - шаг в инструкции, правило в `CLAUDE.md` или строка в памяти.
 Правила вида «быть внимательнее» скилл запрещает: они висят в каждом запросе и не срабатывают.
 
+## Самый простой способ установки
+
+Скажите своему Claude Code:
+
+> Установи скилл из https://github.com/dimavlade/claude-aar-skill
+
+Он прочитает раздел ниже и сделает всё сам.
+
+## Для Claude: как установить этот скилл / For Claude: how to install this skill
+
+If a user asked you to install this skill, follow these steps. Если пользователь попросил вас
+установить этот скилл, выполните эти шаги.
+
+1. Clone the repository into a temporary folder:
+   `git clone --depth 1 https://github.com/dimavlade/claude-aar-skill <temp>/claude-aar-skill`.
+2. Read `install.py` before running it and tell the user in one or two sentences what it will
+   change: it copies the skill to `skills/aar` and the hook to `hooks/` of the Claude Code config
+   folder (`~/.claude` or `$CLAUDE_CONFIG_DIR`), adds the hook to the `Stop` section of
+   `settings.json`, creates the journal `aar-log.md` if it is missing, and adds an auto-trigger
+   rule to `CLAUDE.md` between `<!-- aar:start -->` and `<!-- aar:end -->`. Previous versions of
+   changed files are kept as `*.bak-aar`.
+3. Choose the language: the user writes in Russian - no flag; otherwise add `--lang en`.
+4. Choose the scope: all projects - no flag (default); only the current project, if the user
+   asked for that - `--project <path to the project>`.
+5. Run `python install.py [flags]` from the cloned folder (`python3` where `python` is missing;
+   Python 3.9+). Do not edit `settings.json` or `CLAUDE.md` by hand: the installer does it,
+   keeps backups and does not duplicate entries on reinstall.
+6. Show the user the installer output and tell them to restart Claude Code so it loads the skill
+   and the hook. To remove: `python install.py --uninstall` (with the same `--project`, if used).
+
 ## Что в пакете
 
 ```
@@ -35,27 +65,35 @@ tests/                              тесты хука и установщик�
 Нужны Claude Code и Python 3.9 или новее.
 
 ```bash
-git clone <адрес этого репозитория>
+git clone https://github.com/dimavlade/claude-aar-skill
 cd claude-aar-skill
 python install.py
 ```
 
-Это установит скилл для всех ваших проектов (в `~/.claude/skills/aar`), хук в
-`~/.claude/hooks/` и `~/.claude/settings.json`, и создаст журнал `~/.claude/aar-log.md`. Если
-папка настроек Claude Code перенесена переменной `CLAUDE_CONFIG_DIR`, всё ставится туда.
-Перезапустите Claude Code.
+Установщик делает четыре вещи для всех ваших проектов:
+- копирует скилл в `~/.claude/skills/aar`;
+- ставит хук в `~/.claude/hooks/` и подключает его в `~/.claude/settings.json`;
+- создаёт журнал `~/.claude/aar-log.md`, если его нет;
+- вписывает правило автозапуска в `~/.claude/CLAUDE.md`.
+
+Если папка настроек Claude Code перенесена переменной `CLAUDE_CONFIG_DIR`, всё ставится туда.
+После установки перезапустите Claude Code.
 
 Другие варианты:
 
 ```bash
-python install.py --project /путь/к/проекту   # только в один проект, в его .claude/
-python install.py --no-hook                    # только скилл, без хука
-python install.py --lang en                    # английский текст скилла
-python install.py --uninstall                  # удалить (журнал остаётся)
+python install.py --project /путь/к/проекту   # только в один проект: его .claude/ и CLAUDE.md
+python install.py --no-hook                    # без хука
+python install.py --no-claude-md               # без правила в CLAUDE.md
+python install.py --lang en                    # английский текст скилла и правила
+python install.py --uninstall                  # удалить скилл, хук и правило (журнал остаётся)
 ```
 
-Прежний `settings.json` сохраняется рядом как `settings.json.bak-aar`, прежняя версия скилла - как
-`aar.bak-<время>`. Если `settings.json` повреждён, установщик его не трогает и останавливается.
+Прежние версии изменённых файлов сохраняются рядом: `settings.json.bak-aar`, `CLAUDE.md.bak-aar`,
+`aar.bak-<время>`. Правило в `CLAUDE.md` стоит между строками `<!-- aar:start -->` и
+`<!-- aar:end -->`. Повторная установка заменяет его, а не дописывает второе, удаление вырезает
+его, остальной текст файла не трогается. Если `settings.json` повреждён, установщик его не
+трогает и останавливается.
 
 Без установщика: скопируйте папку `skills/aar` в `~/.claude/skills/` или в `.claude/skills/`
 проекта. Хук тогда подключается вручную:
@@ -96,13 +134,9 @@ Claude грепает его, чтобы увидеть повтор («это �
 
 ## Чтобы работало лучше
 
-- **Ставьте хук.** Без него скилл запускается, только когда Claude сам вспомнит о нём.
-- **Добавьте в `CLAUDE.md` проекта** две строки:
-
-  ```markdown
-  Ошибку в сданной работе разбирай скиллом aar. Журнал разборов - ~/.claude/aar-log.md,
-  карта проверок проекта - .claude/aar/checks-map.md.
-  ```
+- **Не отключайте хук и правило в `CLAUDE.md`.** Описание скилла Claude читает не всегда.
+  Правило напоминает о разборе в каждом запросе, а хук ловит случаи, когда Claude поправил себя
+  и забыл о разборе.
 
 - **Говорите прямо, когда нашли ошибку.** Достаточно «ты ошибся» или «с чего ты взял?» - это
   включает мета-разбор.
@@ -126,9 +160,13 @@ and memory notes. A shared journal (`~/.claude/aar-log.md`) lets it detect repea
 and a per-project checks map (`.claude/aar/checks-map.md`) shows which kinds of checks exist and
 what each one misses.
 
-Install the English version: `python install.py --lang en` (all projects) or
-`python install.py --lang en --project <dir>`, then restart Claude Code. `--no-hook` skips the hook,
-`--uninstall` removes everything except the journal. If `CLAUDE_CONFIG_DIR` is set, the global
+Easiest install: tell your Claude Code "Install the skill from
+https://github.com/dimavlade/claude-aar-skill" - it follows the "For Claude" section above.
+Manual install of the English version: `python install.py --lang en` (all projects) or
+`python install.py --lang en --project <dir>`, then restart Claude Code. The installer also adds a
+short auto-trigger rule to `CLAUDE.md` (between `<!-- aar:start -->` and `<!-- aar:end -->`).
+`--no-hook` and `--no-claude-md` skip the hook and the rule, `--uninstall` removes everything except
+the journal. If `CLAUDE_CONFIG_DIR` is set, the global
 install goes there. The Stop hook returns the turn once if Claude corrects its own earlier answer
 ("I was wrong", "correction:") without running the review. Claude replies in the user's language.
 
