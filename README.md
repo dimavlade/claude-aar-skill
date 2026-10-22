@@ -23,29 +23,37 @@ CI), и только если они невозможны - шаг в инстр
 
 > Установи скилл из https://github.com/dimavlade/claude-aar-skill
 
-Он прочитает раздел ниже и сделает всё сам.
+Он прочитает раздел ниже и спросит, ставить ли для всех проектов или только для текущего. Он
+перечислит, какие файлы изменит, а после вашего «да» поставит всё сам.
 
 ## Для Claude: как установить этот скилл / For Claude: how to install this skill
 
 If a user asked you to install this skill, follow these steps. Если пользователь попросил вас
 установить этот скилл, выполните эти шаги.
 
-1. Clone the repository into a temporary folder:
+1. Get the files into a temporary folder:
    `git clone --depth 1 https://github.com/dimavlade/claude-aar-skill <temp>/claude-aar-skill`.
-2. Read `install.py` before running it and tell the user in one or two sentences what it will
-   change: it copies the skill to `skills/aar` and the hook to `hooks/` of the Claude Code config
-   folder (`~/.claude` or `$CLAUDE_CONFIG_DIR`), adds the hook to the `Stop` section of
-   `settings.json`, creates the journal `aar-log.md` if it is missing, and adds an auto-trigger
-   rule to `CLAUDE.md` between `<!-- aar:start -->` and `<!-- aar:end -->`. Previous versions of
-   changed files are kept as `*.bak-aar`.
-3. Choose the language: the user writes in Russian - no flag; otherwise add `--lang en`.
-4. Choose the scope: all projects - no flag (default); only the current project, if the user
-   asked for that - `--project <path to the project>`.
-5. Run `python install.py [flags]` from the cloned folder (`python3` where `python` is missing;
-   Python 3.9+). Do not edit `settings.json` or `CLAUDE.md` by hand: the installer does it,
-   keeps backups and does not duplicate entries on reinstall.
-6. Show the user the installer output and tell them to restart Claude Code so it loads the skill
-   and the hook. To remove: `python install.py --uninstall` (with the same `--project`, if used).
+   No git - download and unpack
+   https://github.com/dimavlade/claude-aar-skill/archive/refs/heads/main.zip instead.
+2. Find Python 3.9+: try `python3`, then `python`, then on Windows `py -3`. On Windows, a
+   `python` that prints "Python was not found" is the Microsoft Store stub, not Python. No Python
+   at all - stop and tell the user that the skill needs Python 3.9+ for its installer and hook.
+3. Read `install.py`, then **ask the user before running it**, in one message:
+   - scope: all projects (default) or only the current project (`--project <path>`);
+   - what will change: the skill goes to `skills/aar` and the hook to `hooks/` of the Claude Code
+     config folder (`~/.claude`, or `$CLAUDE_CONFIG_DIR` if set - picked up automatically) or of
+     the project's `.claude/`; the hook is added to the `Stop` section of `settings.json`; the
+     journal `aar-log.md` is created if missing; a short auto-trigger rule is added to the global
+     or project `CLAUDE.md` between `<!-- aar:start -->` and `<!-- aar:end -->`. Previous
+     versions of changed files are kept in `aar-backups/<time>/` of the config folder.
+4. Language: the user writes in Russian - no flag; otherwise add `--lang en`.
+5. Run `<python> install.py [--project <path>] [--lang en]` from the downloaded folder. Do not edit
+   `settings.json` or `CLAUDE.md` by hand: the installer validates both before writing anything,
+   keeps the rest of `CLAUDE.md` byte for byte and does not duplicate entries on reinstall. If it
+   stops with "ничего не записано" (nothing was written), show the user the message.
+6. Show the user the installer output, delete the temporary folder, and tell them to restart
+   Claude Code so it loads the skill, the hook and the rule. To remove later: download the
+   repository again and run `<python> install.py --uninstall` (with the same `--project`, if used).
 
 ## Что в пакете
 
@@ -89,11 +97,16 @@ python install.py --lang en                    # английский текст
 python install.py --uninstall                  # удалить скилл, хук и правило (журнал остаётся)
 ```
 
-Прежние версии изменённых файлов сохраняются рядом: `settings.json.bak-aar`, `CLAUDE.md.bak-aar`,
-`aar.bak-<время>`. Правило в `CLAUDE.md` стоит между строками `<!-- aar:start -->` и
-`<!-- aar:end -->`. Повторная установка заменяет его, а не дописывает второе, удаление вырезает
-его, остальной текст файла не трогается. Если `settings.json` повреждён, установщик его не
-трогает и останавливается.
+Прежние версии изменённых файлов сохраняются в папке настроек Claude Code:
+`~/.claude/aar-backups/<время>/`. Правило в `CLAUDE.md` стоит между строками `<!-- aar:start -->`
+и `<!-- aar:end -->`. Повторная установка заменяет его, а не дописывает второе, удаление вырезает
+его, а остальной текст файла, окончания строк и BOM не меняются. Сначала установщик проверяет
+`settings.json` и блок правила. Если файл повреждён или блок неполный, установщик
+останавливается и ничего не записывает.
+
+При установке в проект хук вызывается как `python3` или `python` из PATH, а журнал указан как
+`~/.claude/aar-log.md`, без путей вашей машины. Поэтому `.claude/` и `CLAUDE.md` проекта можно
+коммитить для всей команды.
 
 Без установщика: скопируйте папку `skills/aar` в `~/.claude/skills/` или в `.claude/skills/`
 проекта. Хук тогда подключается вручную:
