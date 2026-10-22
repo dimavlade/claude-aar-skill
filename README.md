@@ -38,7 +38,9 @@ If a user asked you to install this skill, follow these steps. Если поль
 2. Find Python 3.9+: try `python3`, then `python`, then on Windows `py -3`. On Windows, a
    `python` that prints "Python was not found" is the Microsoft Store stub, not Python. No Python
    at all - stop and tell the user that the skill needs Python 3.9+ for its installer and hook.
-3. Read `install.py`, then **ask the user before running it**, in one message:
+3. Read `install.py`, then **ask the user before running it**, in one message (if the user has
+   already named the scope, e.g. "only in this project", that request is the consent - go on and
+   list the changes in your report instead):
    - scope: all projects (default) or only the current project (`--project <path>`);
    - what will change: the skill goes to `skills/aar` and the hook to `hooks/` of the Claude Code
      config folder (`~/.claude`, or `$CLAUDE_CONFIG_DIR` if set - picked up automatically) or of
